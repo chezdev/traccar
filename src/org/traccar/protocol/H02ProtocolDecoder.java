@@ -179,6 +179,11 @@ public class H02ProtocolDecoder extends BaseProtocolDecoder {
             .number("(d+.?d*),")                 // speed
             .number("(d+.?d*)?,")                // course
             .number("(?:(dd)(dd)(dd))?")         // date (ddmmyy)
+
+            .groupBegin()
+                .number(",(d+.?d*)")                // mileage
+            .groupEnd("?")
+
             .groupBegin()
             .expression(",[^,]*,")
             .expression("[^,]*,")
@@ -304,6 +309,12 @@ public class H02ProtocolDecoder extends BaseProtocolDecoder {
             position.setTime(dateBuilder.getDate());
         } else {
             position.setTime(new Date());
+        }
+
+        // mileage
+        if (parser.hasNext()) {
+            double mileage = parser.nextDouble(-1.0);
+            position.set("mileage", mileage);
         }
 
         if (parser.hasNext()) {
