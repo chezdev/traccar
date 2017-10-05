@@ -66,9 +66,11 @@ public class Vt200ProtocolDecoder extends BaseProtocolDecoder {
         int type = buf.readUnsignedShort();
         buf.readUnsignedShort(); // length
 
+        Position position = null;
+
         if (type == 0x2086 || type == 0x2084 || type == 0x2082) {
 
-            Position position = new Position();
+            position = new Position();
             position.setProtocol(getProtocolName());
             position.setDeviceId(deviceSession.getDeviceId());
 
@@ -95,15 +97,28 @@ public class Vt200ProtocolDecoder extends BaseProtocolDecoder {
             position.set(Position.KEY_SATELLITES, buf.readUnsignedByte());
             position.set(Position.KEY_RSSI, buf.readUnsignedByte());
             position.set(Position.KEY_ODOMETER, buf.readUnsignedInt() * 1000);
-            position.set(Position.KEY_STATUS, buf.readUnsignedInt());
+
+            long deviceStatus = buf.readUnsignedInt();
+            position.set(Position.KEY_STATUS, deviceStatus);
+
+            // parse/read device status information
+            buf.readerIndex(buf.readerIndex()-4);
+            byte[] array = buf.readBytes(4).array();
+            byte form20 = array[0];
+            byte form10 = array[1];
+            byte form11 = array[2];
+            byte form12 = array[3];
+
+            boolean acc = ((form11 >> 0) & 1) == 1;
+
+            position.set("acc", acc);
 
             // additional data
 
-            return position;
 
         } else if (type == 0x3088) {
 
-            Position position = new Position();
+            position = new Position();
             position.setProtocol(getProtocolName());
             position.setDeviceId(deviceSession.getDeviceId());
 
@@ -141,11 +156,8 @@ public class Vt200ProtocolDecoder extends BaseProtocolDecoder {
             position.set("laneChangeCount", buf.readUnsignedByte());
             position.set("emergencyRefueling", buf.readUnsignedByte());
 
-            return position;
-
         }
-
-        return null;
+        return position;
     }
 
 }
